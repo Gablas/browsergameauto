@@ -176,9 +176,15 @@ async function getAllElements(page) {
         l = await l.jsonValue();
 
         let name = l.split(" ")[0];
+        let level = parseInt(l.split(" ")[2]);
+        let object = {lvl: level, obj: x[i]};
 
-        if (k[name] == null) k[name] = x[i];
-        else k[name + "2"] = x[i];
+        if (k[name] == null)
+            k[name] = object;
+        else if (k[name + "2"] == null)
+            k[name + "2"] = object;
+        else
+            k[name + "3"] = object;
     }
 
     return k;
@@ -245,17 +251,34 @@ async function main(username, password) {
                 console.log("Kör all för bas: " + name);
                 if (!name.includes("Olje")) {
                     console.log("uppgraderar");
-                    await upgrade(page, selectors["Oljepump"], true);
+                    await upgrade(page, selectors["Oljepump"]["obj"], true);
                     selectors = await getAllElements(page);
-                    await upgrade(page, selectors["Oljepump2"], true);
+                    await upgrade(page, selectors["Oljepump2"]["obj"], true);
                     selectors = await getAllElements(page);
-                    await upgrade(page, selectors["Oljeraffinaderi"], true);
+                    await upgrade(page, selectors["Oljeraffinaderi"]["obj"], true);
                     selectors = await getAllElements(page);
+                    
+                    for (let i = 0; i < 3; i++) {
+                        let barName = i > 0 ? "Barrack" + i : "Barrack";
+                        let fabName = i > 0 ? "Fabrik" + i : "Fabrik";
+                        let akaName = i > 0 ? "Akademi" + i : "Akademi";
+                        let upgNames = [barName, fabName, akaName];
+                        upgNames.forEach(upgName => {
+                            if (selectors[upgName] != null) {
+                                if (selectors[upgName]["lvl"] > 1) {
+                                    await upgrade(page, selectors[upgName]["obj"], true);
+                                    selectors = await getAllElements(page);
+                                }
+                            }
+                        });
+                    }
                 } else {
                     console.log("uppgraderar inte");
                 }
                 h = await sell(page, username);
-            } catch (e) {}
+            } catch (e) {
+                console.log(e);
+            }
 
             if (h < k) {
                 k = h;
